@@ -1,14 +1,9 @@
-// src/app/layout.tsx - Layout raiz com Schema.org COMPLETO
-
+// src/app/layout.tsx
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
-import { SEO_CONFIG } from '@/lib/seoConfig';
-import { 
-  generateOrganizationSchema, 
-  generateLocalBusinessSchema,
-  generateWebSiteSchema 
-} from '@/lib/completeSchemaSystem';
+import { SEO_CONFIG } from '@/components/SEO/seo-config'; // ✅ CORREÇÃO: Import do arquivo correto
+import { BUSINESS_INFO } from '@/data/businessInfo'; // ✅ Import das informações do negócio
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair' });
@@ -65,7 +60,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: 'ykVcRf7lX3i7EmOON7kjUF8HQVH3JdKbio-JAGC5H6g', // ADICIONE depois
+    google: 'ykVcRf7lX3i7EmOON7kjUF8HQVH3JdKbio-JAGC5H6g',
   },
   icons: {
     icon: '/favicon.ico',
@@ -75,12 +70,84 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 };
 
+// ✅ FUNÇÃO PARA GERAR SCHEMAS PRINCIPAIS (substitui o arquivo externo)
+function generateOrganizationSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: BUSINESS_INFO.name,
+    description: BUSINESS_INFO.description,
+    url: SEO_CONFIG.siteUrl,
+    telephone: BUSINESS_INFO.phone,
+    email: BUSINESS_INFO.email,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: BUSINESS_INFO.address.street,
+      addressLocality: BUSINESS_INFO.address.city,
+      addressRegion: BUSINESS_INFO.address.state,
+      postalCode: BUSINESS_INFO.address.postalCode,
+      addressCountry: BUSINESS_INFO.address.country,
+    },
+    sameAs: [
+      `https://instagram.com/${BUSINESS_INFO.socialMedia.instagram}`,
+      `https://facebook.com/${BUSINESS_INFO.socialMedia.facebook}`,
+    ],
+    logo: `${SEO_CONFIG.siteUrl}/logo.png`,
+  };
+}
+
+function generateLocalBusinessSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BeautySalon',
+    name: BUSINESS_INFO.name,
+    description: BUSINESS_INFO.description,
+    url: SEO_CONFIG.siteUrl,
+    telephone: BUSINESS_INFO.phone,
+    email: BUSINESS_INFO.email,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: BUSINESS_INFO.address.street,
+      addressLocality: BUSINESS_INFO.address.city,
+      addressRegion: BUSINESS_INFO.address.state,
+      postalCode: BUSINESS_INFO.address.postalCode,
+      addressCountry: BUSINESS_INFO.address.country,
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: '-23.4824883',
+      longitude: '-46.5895653',
+    },
+    openingHours: [
+      'Wednesday-Friday 09:00-19:00',
+      'Saturday 09:00-17:00', 
+      'Sunday 09:00-17:00'
+    ],
+    priceRange: '$$',
+  };
+}
+
+function generateWebSiteSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SEO_CONFIG.siteName,
+    url: SEO_CONFIG.siteUrl,
+    description: SEO_CONFIG.defaultDescription,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${SEO_CONFIG.siteUrl}/search?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  };
+}
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Gerar schemas principais (estes ficam em TODAS as páginas)
+  // Gerar schemas principais
   const organizationSchema = generateOrganizationSchema();
   const localBusinessSchema = generateLocalBusinessSchema();
   const websiteSchema = generateWebSiteSchema();
@@ -88,7 +155,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${inter.variable} ${playfair.variable}`}>
       <head>
-        {/* SCHEMAS PRINCIPAIS - Google lê estes primeiro */}
+        {/* ✅ SCHEMAS PRINCIPAIS - SEMPRE PRESENTES */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -108,7 +175,7 @@ export default function RootLayout({
           }}
         />
         
-        {/* Google Analytics */}
+        {/* ✅ GOOGLE ANALYTICS */}
         {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS && (
           <>
             <script
@@ -129,6 +196,7 @@ export default function RootLayout({
         )}
       </head>
       <body className={inter.className}>
+        {/* ✅ ACESSIBILIDADE - SKIP TO CONTENT */}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-pink-600 focus:text-white focus:rounded-lg"

@@ -1,15 +1,7 @@
 // src/components/SEO/AutomaticSEO.tsx
-import Head from 'next/head';
+'use client';
 
-/**
- * =====================================================
- * SISTEMA COMPLETO DE SCHEMAS AUTOMÁTICOS
- * =====================================================
- */
-
-// =====================================================
-// TIPOS E INTERFACES
-// =====================================================
+import { useEffect } from 'react';
 
 interface ServiceData {
   name: string;
@@ -33,15 +25,12 @@ interface ArticleData {
 interface AutomaticSEOProps {
   type: 'service' | 'service-city' | 'blog' | 'portfolio' | 'faq' | 'page';
   data: {
-    // Para SERVIÇOS
     serviceName?: string;
     serviceDescription?: string;
     servicePrice?: string;
     serviceUrl?: string;
     city?: string;
     state?: string;
-    
-    // Para BLOG
     title?: string;
     description?: string;
     author?: string;
@@ -50,19 +39,11 @@ interface AutomaticSEOProps {
     image?: string;
     url?: string;
     keywords?: string[];
-    
-    // Para FAQ
     faqs?: Array<{ question: string; answer: string }>;
-    
-    // Para BREADCRUMBS
     breadcrumbs?: Array<{ name: string; url: string }>;
   };
   debug?: boolean;
 }
-
-// =====================================================
-// FUNÇÕES DE SCHEMA (REMOVIDA A FUNÇÃO NÃO UTILIZADA)
-// =====================================================
 
 const generateServiceSchema = (data: ServiceData) => {
   return {
@@ -130,56 +111,37 @@ const generateArticleSchema = (data: ArticleData) => {
   };
 };
 
-// =====================================================
-// COMPONENTE PRINCIPAL
-// =====================================================
-
 export default function AutomaticSEO({ type, data, debug = false }: AutomaticSEOProps) {
-  const schemas: Array<Record<string, unknown>> = [];
+  useEffect(() => {
+    const schemas: Array<Record<string, unknown>> = [];
 
-  // ==========================================
-  // VALIDAÇÃO DE DADOS BÁSICA
-  // ==========================================
-  if (!data) {
-    if (debug) console.error('❌ AutomaticSEO: data está undefined');
-    return null;
-  }
-
-  // ==========================================
-  // 1. BREADCRUMBS (sempre adiciona se existir)
-  // ==========================================
-  if (data.breadcrumbs && data.breadcrumbs.length > 0) {
-    try {
-      const breadcrumbSchema = generateBreadcrumbSchema(data.breadcrumbs);
-      schemas.push(breadcrumbSchema);
-      
-      if (debug) {
-        console.log('📍 Breadcrumb Schema Gerado:', breadcrumbSchema);
-      }
-    } catch (error) {
-      if (debug) console.error('❌ Erro ao gerar breadcrumb schema:', error);
+    if (!data) {
+      if (debug) console.error('❌ AutomaticSEO: data está undefined');
+      return;
     }
-  }
 
-  // ==========================================
-  // 2. SCHEMAS ESPECÍFICOS POR TIPO
-  // ==========================================
-  
-  try {
+    // BREADCRUMBS
+    if (data.breadcrumbs && data.breadcrumbs.length > 0) {
+      try {
+        const breadcrumbSchema = generateBreadcrumbSchema(data.breadcrumbs);
+        schemas.push(breadcrumbSchema);
+        if (debug) console.log('📍 Breadcrumb Schema:', breadcrumbSchema);
+      } catch (error) {
+        if (debug) console.error('❌ Erro breadcrumb:', error);
+      }
+    }
+
     // SERVIÇO NORMAL
     if (type === 'service' && data.serviceName) {
       const serviceSchema = generateServiceSchema({
         name: data.serviceName,
         description: data.serviceDescription || `Serviço de ${data.serviceName} - Studio Amendola`,
         price: data.servicePrice,
-        url: data.serviceUrl || typeof window !== 'undefined' ? window.location.href : '',
+        url: data.serviceUrl || (typeof window !== 'undefined' ? window.location.href : ''),
         image: data.image || '/images/services/default.jpg',
       });
       schemas.push(serviceSchema);
-      
-      if (debug) {
-        console.log('🔧 Service Schema Gerado:', serviceSchema);
-      }
+      if (debug) console.log('🔧 Service Schema:', serviceSchema);
     }
 
     // SERVIÇO + CIDADE
@@ -192,10 +154,7 @@ export default function AutomaticSEO({ type, data, debug = false }: AutomaticSEO
         image: data.image || '/images/services/default.jpg',
       });
       schemas.push(serviceCitySchema);
-      
-      if (debug) {
-        console.log('🏙️ Service City Schema Gerado:', serviceCitySchema);
-      }
+      if (debug) console.log('🏙️ Service City Schema:', serviceCitySchema);
     }
 
     // ARTIGO/BLOG
@@ -211,76 +170,42 @@ export default function AutomaticSEO({ type, data, debug = false }: AutomaticSEO
         keywords: data.keywords || [],
       });
       schemas.push(articleSchema);
-      
-      if (debug) {
-        console.log('📝 Article Schema Gerado:', articleSchema);
-      }
+      if (debug) console.log('📝 Article Schema:', articleSchema);
     }
 
     // FAQ
     if (type === 'faq' && data.faqs && data.faqs.length > 0) {
       const faqSchema = generateFAQSchema(data.faqs);
       schemas.push(faqSchema);
-      
-      if (debug) {
-        console.log('❓ FAQ Schema Gerado:', faqSchema);
-      }
+      if (debug) console.log('❓ FAQ Schema:', faqSchema);
     }
 
-    // PÁGINA GENÉRICA (apenas breadcrumbs se existirem)
-    if (type === 'page' && debug) {
-      console.log('📄 Página genérica - apenas breadcrumbs se disponíveis');
-    }
-
-  } catch (error) {
-    if (debug) console.error('❌ Erro ao gerar schemas:', error);
-  }
-
-  // ==========================================
-  // 3. DEBUG: RELATÓRIO COMPLETO
-  // ==========================================
-  if (debug) {
-    console.group('🚀 AUTOMATIC SEO DEBUG');
-    console.log('📄 Tipo de Página:', type);
-    console.log('📊 Total de Schemas Gerados:', schemas.length);
-    console.log('🔍 Dados Recebidos:', data);
-    console.log('🎯 Schemas:', schemas);
-    
-    if (schemas.length === 0) {
-      console.warn('⚠️ NENHUM SCHEMA GERADO! Verifique os dados.');
-    }
-    
-    console.groupEnd();
-  }
-
-  // ==========================================
-  // 4. INJEÇÃO NO HEAD (CORRETA)
-  // ==========================================
-  if (schemas.length === 0) {
+    // DEBUG
     if (debug) {
-      console.warn('⚠️ AutomaticSEO: Nenhum schema gerado para', type);
+      console.group('🚀 AUTOMATIC SEO DEBUG');
+      console.log('📄 Tipo de Página:', type);
+      console.log('📊 Total de Schemas Gerados:', schemas.length);
+      console.log('🔍 Dados Recebidos:', data);
+      console.log('🎯 Schemas:', schemas);
+      if (schemas.length === 0) {
+        console.warn('⚠️ NENHUM SCHEMA GERADO! Verifique os dados.');
+      }
+      console.groupEnd();
     }
-    return null;
-  }
 
-  return (
-    <Head>
-      {schemas.map((schema, index) => (
-        <script
-          key={`schema-${type}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`}
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(schema),
-          }}
-        />
-      ))}
-    </Head>
-  );
+    // INJETA OS SCHEMAS NO HEAD
+    schemas.forEach((schema, index) => {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.text = JSON.stringify(schema);
+      script.id = `schema-${type}-${index}-${Date.now()}`;
+      document.head.appendChild(script);
+    });
+
+  }, [type, data, debug]);
+
+  return null;
 }
-
-// =====================================================
-// FUNÇÕES AUXILIARES PARA BREADCRUMBS
-// =====================================================
 
 export function generateServiceBreadcrumbs(serviceName: string, serviceSlug: string) {
   return [
