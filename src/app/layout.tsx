@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: 'SEU_CODIGO_GOOGLE_SEARCH_CONSOLE', // ADICIONE depois
+    google: 'ykVcRf7lX3i7EmOON7kjUF8HQVH3JdKbio-JAGC5H6g', // ADICIONE depois
   },
   icons: {
     icon: '/favicon.ico',
