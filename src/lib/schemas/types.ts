@@ -16,6 +16,7 @@ export interface BaseSchema {
   "@context": "https://schema.org";
   "@type": string | string[];
   "@id"?: string;
+  [key: string]: unknown; // ESLint feliz!
 }
 
 /**
