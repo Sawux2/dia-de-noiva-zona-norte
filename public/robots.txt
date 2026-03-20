@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Bloquear painel admin dos motores de busca
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://studioamendollanoivas.com.br/sitemap.xml

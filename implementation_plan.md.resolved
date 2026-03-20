@@ -1,0 +1,383 @@
+# 🌸 Studio Amendola Noivas — Painel SaaS Completo
+
+Transformar o site atual (Next.js 15 + Tailwind + Framer Motion, apenas frontend estático com SEO schemas) em uma **plataforma SaaS completa** com:
+
+- **Painel administrativo** com login seguro
+- **Blog SEO** com CRUD total (criar, editar, excluir posts)
+- **Analytics e Métricas** (visitantes, origem, dispositivos, tempo na página)
+- **Sistema de Leads** (captura e gerenciamento de contatos)
+- **Gerador de Posts SEO** com templates automatizados
+- **Dashboard** com KPIs e gráficos
+- **Agendamentos** visualização e gerenciamento
+
+---
+
+## ⚠️ User Review Required
+
+> [!IMPORTANT]
+> **Banco de Dados — Supabase (Free Tier)**
+> O plano usa **Supabase** como banco de dados (PostgreSQL + Auth + Storage) pois é gratuito, fácil de integrar com Next.js e não requer servidor dedicado. Você precisará criar uma conta em [supabase.com](https://supabase.com) e me fornecer as credenciais (SUPABASE_URL e SUPABASE_ANON_KEY) para a fase de integração.
+
+> [!WARNING]  
+> **Analytics — Alternativa ao Google Analytics**
+> Para métricas internas ricas (sem depender do GA), usaremos uma tabela de `page_views` no próprio Supabase + middleware Next.js para rastrear cada acesso. Isso nos dá controle total e nenhum custo adicional.
+
+> [!NOTE]
+> **Escopo da Fase 1 (esta entrega)**
+> Esta primeira fase cria toda a estrutura do painel SaaS com dados mock/locais para demonstração imediata. A integração real com Supabase será a Fase 2 (requer suas credenciais). O painel já será 100% funcional visuamente.
+
+---
+
+## 📋 Análise do Sistema Atual
+
+| Item | Status Atual |
+|------|-------------|
+| Framework | Next.js 15 App Router ✅ |
+| Styling | Tailwind CSS v4 ✅ |
+| Animações | Framer Motion ✅ |
+| Banco de Dados | ❌ Nenhum |
+| Autenticação | ❌ Nenhuma |
+| Blog | ❌ Não existe |
+| Analytics | ❌ Não existe |
+| Painel Admin | ❌ Não existe |
+| SEO Schemas | ✅ Implementado (StructuredData + companyData.ts) |
+
+---
+
+## 🏗️ Arquitetura Proposta
+
+```
+src/
+├── app/
+│   ├── (site)/              # Site público
+│   │   ├── page.tsx         # Home (atual)
+│   │   ├── blog/
+│   │   │   ├── page.tsx     # Listagem de posts
+│   │   │   └── [slug]/
+│   │   │       └── page.tsx # Post individual (SSG + SEO)
+│   │   └── servicos/
+│   │       └── page.tsx     # Página de serviços
+│   │
+│   ├── admin/               # Painel SaaS (protegido)
+│   │   ├── layout.tsx       # Layout do painel
+│   │   ├── page.tsx         # Dashboard principal
+│   │   ├── login/
+│   │   │   └── page.tsx     # Login
+│   │   ├── blog/
+│   │   │   ├── page.tsx     # Lista de posts (CRUD)
+│   │   │   ├── novo/
+│   │   │   │   └── page.tsx # Criar post
+│   │   │   └── [id]/
+│   │   │       └── page.tsx # Editar post
+│   │   ├── leads/
+│   │   │   └── page.tsx     # Gerenciar leads
+│   │   ├── analytics/
+│   │   │   └── page.tsx     # Métricas e analytics
+│   │   └── configuracoes/
+│   │       └── page.tsx     # Configurações do site
+│   │
+│   └── api/                 # API Routes
+│       ├── blog/
+│       │   ├── route.ts     # GET/POST posts
+│       │   └── [id]/
+│       │       └── route.ts # GET/PUT/DELETE post
+│       ├── leads/
+│       │   └── route.ts     # POST lead (formulário)
+│       ├── analytics/
+│       │   ├── track/
+│       │   │   └── route.ts # POST pageview
+│       │   └── dashboard/
+│       │       └── route.ts # GET métricas
+│       └── auth/
+│           └── route.ts     # Login/logout
+│
+├── components/
+│   ├── Layout/              # Existentes
+│   ├── home/               # Existentes
+│   ├── blog/               # [NEW] Componentes do blog público
+│   │   ├── BlogCard.tsx
+│   │   ├── BlogGrid.tsx
+│   │   └── PostContent.tsx
+│   └── admin/              # [NEW] Componentes do painel
+│       ├── Sidebar.tsx
+│       ├── DashboardCard.tsx
+│       ├── PostEditor.tsx
+│       ├── LeadsTable.tsx
+│       ├── AnalyticsChart.tsx
+│       └── DataTable.tsx
+│
+└── lib/
+    ├── schemas/             # Existentes
+    ├── db/                  # [NEW] Camada de dados
+    │   ├── posts.ts         # CRUD de posts
+    │   ├── leads.ts         # CRUD de leads
+    │   └── analytics.ts     # CRUD de analytics
+    └── auth/                # [NEW] Autenticação
+        └── middleware.ts
+```
+
+---
+
+## 🗄️ Modelo de Dados
+
+### Tabela: `blog_posts`
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | UUID | PK |
+| title | text | Título do post |
+| slug | text | URL amigável (SEO) |
+| excerpt | text | Resumo (meta description) |
+| content | text | Conteúdo em Markdown |
+| cover_image | text | URL da imagem de capa |
+| category | text | noivas/madrinhas/debutantes/eventos/dicas |
+| tags | text[] | Array de tags SEO |
+| seo_title | text | Title tag customizado |
+| seo_description | text | Meta description |
+| focus_keyword | text | Palavra-chave principal |
+| status | enum | draft/published/archived |
+| author | text | Nome do autor |
+| views | int | Contagem de visualizações |
+| published_at | timestamp | Data de publicação |
+| created_at | timestamp | Data de criação |
+| updated_at | timestamp | Última atualização |
+
+### Tabela: `leads`
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | UUID | PK |
+| name | text | Nome |
+| phone | text | Telefone/WhatsApp |
+| email | text | E-mail |
+| service | text | Serviço de interesse |
+| event_date | date | Data do evento |
+| message | text | Mensagem |
+| source | text | Origem (blog/home/google) |
+| utm_source | text | UTM source |
+| utm_medium | text | UTM medium |
+| status | enum | new/contacted/converted/lost |
+| created_at | timestamp | Data |
+
+### Tabela: `page_views`
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | UUID | PK |
+| page | text | URL da página |
+| referrer | text | Página de origem |
+| utm_source | text | Origem (google/instagram) |
+| utm_medium | text | Meio (organic/social) |
+| utm_campaign | text | Campanha |
+| device | text | mobile/desktop/tablet |
+| browser | text | Chrome/Safari/etc |
+| country | text | País |
+| city | text | Cidade |
+| session_id | text | ID da sessão |
+| created_at | timestamp | Timestamp |
+
+---
+
+## 🚀 Proposed Changes
+
+### Component: Blog Público
+
+#### [NEW] `src/app/(site)/blog/page.tsx`
+Página de listagem de posts do blog com:
+- Grid de cards responsivo
+- Filtro por categoria (noivas, debutantes, madrinhas, dicas...)
+- Paginação
+- SEO metadata automático
+- Schema `CollectionPage` + `BlogPosting`
+
+#### [NEW] `src/app/(site)/blog/[slug]/page.tsx`  
+Página de post individual com:
+- `generateStaticParams` para SSG
+- `generateMetadata` com título, description, OG tags
+- Schema `Article`/`BlogPosting` completo
+- Breadcrumbs estruturados
+- Tempo de leitura estimado
+- Posts relacionados
+- CTA de agendamento ao final
+
+---
+
+### Component: Admin Layout
+
+#### [NEW] `src/app/admin/layout.tsx`
+Layout do painel com:
+- Verificação de autenticação (middleware)
+- Sidebar com navegação
+- Header com usuário logado
+- Design dark premium (tons escuros + dourado)
+- Responsivo com menu mobile
+
+#### [NEW] `src/app/admin/page.tsx` — Dashboard
+KPIs em cards:
+- 📊 Total de visitantes (dia/semana/mês)
+- 📝 Posts publicados / rascunhos
+- 📍 Top páginas visitadas
+- 🎯 Leads capturados
+- 📈 Gráfico de visitantes (recharts)
+- 🌍 Origem do tráfego (organic/social/direct)
+- 📱 Dispositivos (mobile vs desktop)
+- 🔍 Top palavras-chave que trouxeram visitas
+
+---
+
+### Component: CRUD de Posts
+
+#### [NEW] `src/app/admin/blog/page.tsx`
+Table com todos os posts:
+- Status (publicado/rascunho/arquivado)
+- Visualizações
+- Data
+- Ações: Editar, Publicar, Excluir
+- Botão "Novo Post"
+- Busca e filtros
+
+#### [NEW] `src/app/admin/blog/novo/page.tsx`
+Editor de posts rico:
+- Campo título + auto-geração de slug
+- Editor Markdown (react-md-editor ou textarea com preview)
+- Campo de categoria e tags
+- Seção SEO: seo_title, meta description, focus_keyword
+- Upload de imagem de capa
+- Templates prontos por categoria
+- Botões: Salvar rascunho / Publicar
+
+#### [NEW] `src/app/admin/blog/[id]/page.tsx`
+Mesmo editor, preenchido com dados do post existente.
+
+---
+
+### Component: Leads
+
+#### [NEW] `src/app/admin/leads/page.tsx`
+- Tabela de leads com status
+- Filtro por serviço, status, data
+- Botão de WhatsApp direto
+- Exportar CSV
+- Mudar status (novo → contatado → convertido)
+
+#### [MODIFY] [src/components/home/Hero.tsx](file:///c:/Users/Andr%C3%A9/Desktop/studioamendolavercel/dia-de-noiva-zona-norte/dia-de-noiva-zona-norte/src/components/home/Hero.tsx)
+Adicionar formulário de captura de lead inline no hero.
+
+#### [NEW] `src/components/home/LeadForm.tsx`
+Formulário modal de agendamento:
+- Nome, telefone, tipo de evento, data desejada
+- Captura UTM parameters
+- Salva no banco + envia WhatsApp
+
+---
+
+### Component: Analytics
+
+#### [NEW] `src/app/admin/analytics/page.tsx`
+- Gráfico de visitantes linha (últimos 30 dias)
+- Donut chart origens (Google/Instagram/Direto)
+- Mapa/tabela de cidades
+- Top páginas mais visitadas
+- Taxa de bounce estimada
+- Posts mais lidos
+
+---
+
+### Component: API Routes
+
+#### [NEW] `src/app/api/blog/route.ts`
+```
+GET  /api/blog          → Lista posts publicados
+POST /api/blog          → Cria novo post (auth required)
+```
+
+#### [NEW] `src/app/api/blog/[id]/route.ts`
+```
+GET    /api/blog/:id    → Busca post por ID
+PUT    /api/blog/:id    → Atualiza post (auth required)
+DELETE /api/blog/:id    → Deleta post (auth required)
+```
+
+#### [NEW] `src/app/api/leads/route.ts`
+```
+POST /api/leads → Salva lead capturado pelo formulário
+GET  /api/leads → Lista leads (auth required)
+```
+
+#### [NEW] `src/app/api/analytics/track/route.ts`
+```
+POST /api/analytics/track → Registra pageview (chamado pelo middleware)
+```
+
+#### [NEW] `src/app/api/analytics/dashboard/route.ts`
+```
+GET /api/analytics/dashboard → Retorna métricas agregadas
+```
+
+#### [NEW] `src/middleware.ts`
+- Protege as rotas `/admin/*`
+- Injeta tracking de pageview em todas as rotas públicas
+- Lê cookies de sessão para autenticação
+
+---
+
+### Lib: Camada de Dados
+
+#### [NEW] `src/lib/db/posts.ts`
+Funções CRUD para posts (inicialmente com JSON local, migra para Supabase na Fase 2).
+
+#### [NEW] `src/lib/db/leads.ts`
+Funções CRUD para leads.
+
+#### [NEW] `src/lib/db/analytics.ts`
+Funções de leitura/escrita de analytics.
+
+#### [NEW] `src/lib/auth/session.ts`
+Login simples com senha hardcoded (admin panel) + JWT cookie.
+
+---
+
+### Package Dependencies
+
+Novos pacotes necessários:
+```bash
+npm install @supabase/supabase-js recharts react-markdown @uiw/react-md-editor jose date-fns
+```
+
+- **recharts** — gráficos do dashboard
+- **react-markdown** — preview de markdown no editor
+- **@uiw/react-md-editor** — editor markdown rico
+- **jose** — JWT para autenticação
+- **date-fns** — formatação de datas
+- **@supabase/supabase-js** — Fase 2 (pronto para instalar)
+
+---
+
+## ✅ Verification Plan
+
+### Automated Tests
+Nenhum teste automatizado existente encontrado no projeto. Verificações serão visuais via browser.
+
+### Browser Verification
+1. **Site público:** `npm run dev` → acessar `localhost:3000` — site deve funcionar normalmente
+2. **Blog público:** acessar `localhost:3000/blog` — listagem de posts deve aparecer
+3. **Post individual:** acessar `localhost:3000/blog/[slug]` — post completo com SEO
+4. **Login admin:** acessar `localhost:3000/admin/login` — formulário de login
+5. **Dashboard:** após login → `localhost:3000/admin` — KPIs e gráficos
+6. **CRUD posts:** criar, editar e excluir um post pelo painel
+7. **Leads:** preencher formulário no site → ver lead no painel admin
+8. **Analytics:** navegar pelo site → ver métricas atualizando no painel
+
+### Manual Verification
+- Verificar se os schemas JSON-LD dos posts aparecem corretamente (DevTools → Network → ver o HTML do post)
+- Verificar se a rota `/admin` redireciona para `/admin/login` quando não logado
+- Verificar responsividade mobile do painel admin
+
+---
+
+## 📅 Roadmap Pós-Fase 1
+
+| Fase | Funcionalidade |
+|------|---------------|
+| **Fase 2** | Integração real com Supabase (banco de dados em nuvem) |
+| **Fase 3** | IA para sugestão automática de posts SEO |
+| **Fase 4** | Sistema de agendamentos online com calendário |
+| **Fase 5** | Integração Google Analytics 4 + Search Console |
+| **Fase 6** | WhatsApp Business API para automação de leads |
